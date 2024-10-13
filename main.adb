@@ -20,9 +20,9 @@ procedure Simulation is
 
 
    --each Producer is assigned a Product that it produces
-   productName: constant array (ProducerType) of String(1 .. 8) := ("Product1", "Product2", "Product3", "Product4", "Product5");
+   productName: constant array (ProducerType) of String(1 .. 9) := ("--Pizza--", "-Burger--", "-Pancake-", "Spaghetti", "--Sushi--");
    --Assembly is a collection of products
-   assemblyName: constant array (AssemblyType) of String(1 .. 9) := ("Assembly1", "Assembly2", "Assembly3");
+   assemblyName: constant array (AssemblyType) of String(1 .. 4) := ("Vege", "-Fit", "Keto");
 
 
    ----TASK DECLARATIONS----
@@ -98,7 +98,7 @@ procedure Simulation is
       assemblyNumber: Integer;   --ilosc (numer) pobranego egzemplarza zestawu danego typu
       consumption: Integer;
       assemblyType: Integer;   --losowany typ zestawu (1-3)
-      consumerName: constant array (1 .. numberOfConsumers) of String(1 .. 9) := ("Consumer1", "Consumer2");
+      consumerName: constant array (1 .. numberOfConsumers) of String(1 .. 6) := ("Grubas", "Zarlok");
    begin
       accept Start(consumerNumber: in ConsumerType; consumptionTime: in Integer) do
          RandomConsumption.Reset(G);
