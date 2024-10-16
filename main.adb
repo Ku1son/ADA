@@ -18,12 +18,10 @@ procedure Simulation is
    subtype AssemblyType is Integer range 1 .. numberOfAssemblies;  --wartosci moge przyjmowac 
    subtype ConsumerType is Integer range 1 .. numberOfConsumers;   --podane zmienne
 
-
    --each Producer is assigned a Product that it produces
-   productName: constant array (ProducerType) of String(1 .. 9) := ("--Pizza--", "-Burger--", "-Pancake-", "Spaghetti", "--Sushi--");
+   productName: constant array (ProducerType) of String(1 .. 9) := ("Ser      ", "Szynka   ", "Salami   ", "Ananas   ", "Pieczarki");
    --Assembly is a collection of products
-   assemblyName: constant array (AssemblyType) of String(1 .. 4) := ("Vege", "-Fit", "Keto");
-
+   assemblyName: constant array (AssemblyType) of String(1 .. 11) := ("Hawajska   ", "Salami     ", "Capricciosa");
 
    ----TASK DECLARATIONS----
 
@@ -118,15 +116,16 @@ procedure Simulation is
 
 
    --Buffer--
-
+   
+   
    task body Buffer is
       storageCapacity: constant Integer := 30;
       type StorageType is array (producerType) of Integer;
       storage: StorageType := (0, 0, 0, 0, 0);   --przechowuje liczbe produktow od kadzego produceta
       assemblyContent: array(assemblyType, producerType) of Integer   
-        := ((2, 1, 2, 0, 2), --do utworzenia a.1 potrzeba produktow 2 od P(1), 1 od P(2) itd, 2 od P(3) itd.
-            (1, 2, 0, 1, 0), -- ...
-            (3, 2, 2, 0, 1)); -- ...
+        := ((2, 1, 0, 3, 0), --do utworzenia a.1 potrzeba produktow 2 od P(1), 1 od P(2) itd, 2 od P(3) itd.
+            (2, 0, 3, 0, 0), -- ...
+            (2, 2, 0, 0, 3)); -- ...
       maxAssemblyContent: array(producerType) of Integer;
       assemblyNumber: array(assemblyType) of Integer := (1, 1, 1);
       inStorage: Integer := 0;
