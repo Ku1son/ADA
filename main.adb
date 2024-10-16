@@ -175,33 +175,33 @@ procedure Simulation is
       Put_Line(ESC & "[91m" & "B: Buffer started" & ESC & "[0m");
       SetupVariables;
       loop
-         accept Take(product: in ProducerType; number: in Integer) do
-            if CanAccept(product) then
-               Put_Line(ESC & "[91m" & "B: Accepted product " & productName(product) & " number " & Integer'Image(number)& ESC & "[0m");
-               storage(product) := storage(product) + 1;
-               inStorage := inStorage + 1;
-            else
-               Put_Line(ESC & "[91m" & "B: Rejected product " & productName(product) & " number " & Integer'Image(number)& ESC & "[0m");
-            end if;
-         end Take;
+         select
+            accept Take(product: in ProducerType; number: in Integer) do
+               if CanAccept(product) then
+                  Put_Line(ESC & "[91m" & "B: Accepted product " & productName(product) & " number " & Integer'Image(number)& ESC & "[0m");
+                  storage(product) := storage(product) + 1;
+                  inStorage := inStorage + 1;
+               else
+                  Put_Line(ESC & "[91m" & "B: Rejected product " & productName(product) & " number " & Integer'Image(number)& ESC & "[0m");
+               end if;
+            end Take;
+         or
+              accept Deliver(assembly: in AssemblyType; number: out Integer) do
+               if CanDeliver(assembly) then
+                  Put_Line(ESC & "[91m" & "B: Delivered assembly " & assemblyName(assembly) & " number " & Integer'Image(assemblyNumber(assembly))& ESC & "[0m");
+                  for W in producerType loop
+                     storage(W) := storage(W) - assemblyContent(assembly, W);
+                     inStorage := inStorage - assemblyContent(assembly, W);
+                  end loop;
+                  number := assemblyNumber(assembly);
+                  assemblyNumber(assembly) := assemblyNumber(assembly) + 1;
+               else
+                  Put_Line(ESC & "[91m" & "B: Lacking products for assembly " & assemblyName(assembly)& ESC & "[0m");
+                  number := 0;
+               end if;
+            end Deliver;
+         end select;
          StorageContents;
-
-         accept Deliver(assembly: in AssemblyType; number: out Integer) do
-            if CanDeliver(assembly) then
-               Put_Line(ESC & "[91m" & "B: Delivered assembly " & assemblyName(assembly) & " number " & Integer'Image(assemblyNumber(assembly))& ESC & "[0m");
-               for W in producerType loop
-                  storage(W) := storage(W) - assemblyContent(assembly, W);
-                  inStorage := inStorage - assemblyContent(assembly, W);
-               end loop;
-               number := assemblyNumber(assembly);
-               assemblyNumber(assembly) := assemblyNumber(assembly) + 1;
-            else
-               Put_Line(ESC & "[91m" & "B: Lacking products for assembly " & assemblyName(assembly)& ESC & "[0m");
-               number := 0;
-            end if;
-         end Deliver;
-         StorageContents;
-
       end loop;
    end Buffer;
 
