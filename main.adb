@@ -15,13 +15,15 @@ procedure Simulation is
    numberOfConsumers: constant Integer := 2;
 
    subtype ProducerType is Integer range 1 .. numberOfProducers;   --podtypy okreslajace jakie
-   subtype AssemblyType is Integer range 1 .. numberOfAssemblies;  --wartosci moge przyjmowac 
+   subtype AssemblyType is Integer range 1 .. numberOfAssemblies;  --wartosci moge przyjmowac
    subtype ConsumerType is Integer range 1 .. numberOfConsumers;   --podane zmienne
 
+
    --each Producer is assigned a Product that it produces
-   productName: constant array (ProducerType) of String(1 .. 9) := ("Ser      ", "Szynka   ", "Salami   ", "Ananas   ", "Pieczarki");
+   productName: constant array (ProducerType) of String(1 .. 9) := ("---Ser---", "-Szynka--", "-Salami--", "-Ananas--", "Pieczarki");
    --Assembly is a collection of products
-   assemblyName: constant array (AssemblyType) of String(1 .. 11) := ("Hawajska   ", "Salami     ", "Capricciosa");
+   assemblyName: constant array (AssemblyType) of String(1 .. 11) := ("-Hawajska--", "-Pepperoni-", "Capricciosa");
+
 
    ----TASK DECLARATIONS----
 
@@ -42,11 +44,18 @@ procedure Simulation is
       entry Take(product: in ProducerType; number: in Integer);
       -- Deliver an assembly (provided there are enough products for it)
       entry Deliver(assembly: in AssemblyType; number: out Integer);
+      entry CleaningDay;
    end Buffer;
+
+   task type Cleaning is
+      entry Start(cleaningInterval: in Duration);
+   end Cleaning;
+
 
    P: array ( 1 .. numberOfProducers ) of Producer;   --utworzenie instancji
    K: array ( 1 .. numberOfConsumers ) of Consumer;   --tak jakby obiektow (PO)
    B: Buffer;
+   C: Cleaning;
 
 
    ----TASK DEFINITIONS----
@@ -104,34 +113,58 @@ procedure Simulation is
          consumerNb := consumerNumber;   --stale przypisany do danego consumenta (1-2)
          consumption := consumptionTime;   --ta zmienna nic nie robi
       end Start;
-      Put_Line(ESC & "[96m" & "C: Started consumer " & consumerName(consumerNb) & ESC & "[0m");
+      Put_Line(ESC & "[96m" & "K: Started consumer " & consumerName(consumerNb) & ESC & "[0m");
       loop
          delay Duration(RandomConsumption.Random(G));   --simulate consumption
          assemblyType := RandomAssembly.Random(GA);
          -- take an assembly for consumption
          B.Deliver(assemblyType, assemblyNumber);
-         Put_Line(ESC & "[96m" & "C: " & consumerName(consumerNb) & " takes assembly " & assemblyName(assemblyType) & " number " & Integer'Image(assemblyNumber) & ESC & "[0m");
+         Put_Line(ESC & "[96m" & "K: " & consumerName(consumerNb) & " takes assembly " & assemblyName(assemblyType) & " number " & Integer'Image(assemblyNumber) & ESC & "[0m");
       end loop;
    end Consumer;
 
 
+   --Cleaning--
+
+   task body Cleaning is
+      dayNumber: Integer;
+      interval : Duration;
+   begin
+      accept Start(cleaningInterval: in Duration) do
+         dayNumber := 1;
+         interval := cleaningInterval;
+      end Start;
+      Put_Line(ESC & "[92m" & "C: Cleaning task started." & ESC & "[0m");
+      loop
+         delay Duration(interval);  
+         dayNumber := dayNumber + 1;
+         Put_Line(ESC & "[92m" & "C: Day " & Integer'Image(dayNumber) & " passed." & ESC & "[0m");
+
+         if dayNumber = 10 then
+            Put_Line(ESC & "[92m" & "C: Cleaning day arrived!" & ESC & "[0m");
+            B.CleaningDay;
+            dayNumber := 1; 
+         end if;
+      end loop;
+   end Cleaning;
+
+
    --Buffer--
-   
-   
+
    task body Buffer is
       storageCapacity: constant Integer := 30;
       type StorageType is array (producerType) of Integer;
       storage: StorageType := (0, 0, 0, 0, 0);   --przechowuje liczbe produktow od kadzego produceta
-      assemblyContent: array(assemblyType, producerType) of Integer   
+      assemblyContent: array(assemblyType, producerType) of Integer
         := ((2, 1, 0, 3, 0), --do utworzenia a.1 potrzeba produktow 2 od P(1), 1 od P(2) itd, 2 od P(3) itd.
             (2, 0, 3, 0, 0), -- ...
             (2, 2, 0, 0, 3)); -- ...
       maxAssemblyContent: array(producerType) of Integer;
       assemblyNumber: array(assemblyType) of Integer := (1, 1, 1);
       inStorage: Integer := 0;
-      
-      --wypelnia maxAssemblyContent (dla P1:3, P2:2, P3:2, P4:1, P5:2) 
-      procedure SetupVariables is   
+
+      --wypelnia maxAssemblyContent (dla P1:3, P2:2, P3:2, P4:1, P5:2)
+      procedure SetupVariables is
       begin
          for W in producerType loop
             maxAssemblyContent(W) := 0;
@@ -151,9 +184,9 @@ procedure Simulation is
             return True;
          end if;
       end CanAccept;
-      
+
       --czy mozna zlozyc zamowienie na dany zestaw
-      function CanDeliver(assembly: AssemblyType) return Boolean is     
+      function CanDeliver(assembly: AssemblyType) return Boolean is
       begin
          for W in producerType loop
             if storage(W) < assemblyContent(assembly, W) then
@@ -162,6 +195,20 @@ procedure Simulation is
          end loop;
          return True;
       end CanDeliver;
+      
+      procedure TodayIsCleaningDay is
+      begin
+         Put_Line(ESC & "[92m" & "C: Cleaning day: removing products." & ESC & "[0m");
+         for W in ProducerType loop
+            if storage(W) >= 3 then
+               storage(W) := storage(W) - 3;
+               inStorage := inStorage - 3;
+               Put_Line(ESC & "[92m" & "C: Removed 3 " & productName(W) & " from storage." & ESC & "[0m");
+            else
+               Put_Line(ESC & "[92m" & "C: Not enough " & productName(W) & " to remove 3 items." & ESC & "[0m");
+            end if;
+         end loop;
+      end TodayIsCleaningDay;
 
       procedure StorageContents is
       begin
@@ -185,8 +232,9 @@ procedure Simulation is
                   Put_Line(ESC & "[91m" & "B: Rejected product " & productName(product) & " number " & Integer'Image(number)& ESC & "[0m");
                end if;
             end Take;
-         or
-              accept Deliver(assembly: in AssemblyType; number: out Integer) do
+            
+         or   
+            accept Deliver(assembly: in AssemblyType; number: out Integer) do
                if CanDeliver(assembly) then
                   Put_Line(ESC & "[91m" & "B: Delivered assembly " & assemblyName(assembly) & " number " & Integer'Image(assemblyNumber(assembly))& ESC & "[0m");
                   for W in producerType loop
@@ -200,8 +248,14 @@ procedure Simulation is
                   number := 0;
                end if;
             end Deliver;
+         
+         or
+            accept CleaningDay do
+               TodayIsCleaningDay;
+            end CleaningDay;
          end select;
-         StorageContents;
+         
+            StorageContents;
       end loop;
    end Buffer;
 
@@ -215,4 +269,9 @@ begin
    for J in 1 .. numberOfConsumers loop
       K(J).Start(J,12);
    end loop;
+   C.Start(1.0);
 end Simulation;
+
+
+
+
