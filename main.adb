@@ -155,6 +155,8 @@ procedure Simulation is
       storageCapacity: constant Integer := 30;
       type StorageType is array (producerType) of Integer;
       storage: StorageType := (0, 0, 0, 0, 0);   --przechowuje liczbe produktow od kadzego produceta
+      reservedSpacesPerProduct: StorageType := (6, 4, 4, 4, 4); 
+      
       assemblyContent: array(assemblyType, producerType) of Integer
         := ((2, 1, 0, 3, 0), --do utworzenia a.1 potrzeba produktow 2 od P(1), 1 od P(2) itd, 2 od P(3) itd.
             (2, 0, 3, 0, 0), -- ...
@@ -177,8 +179,17 @@ procedure Simulation is
       end SetupVariables;
 
       function CanAccept(product: ProducerType) return Boolean is   --tu nie trzeba przekazywac parametrow lol
+         reservedSpaces : Integer := 0;
+         
       begin
-         if inStorage >= storageCapacity then
+         for W in producerType loop
+            if storage(W) < reservedSpacesPerProduct(W) then
+               reservedSpaces := reservedSpaces +reservedSpacesPerProduct(W) - storage(W);
+            end if;
+         end loop;
+         
+         
+         if inStorage + reservedSpaces >= storageCapacity then
             return False;
          else
             return True;
@@ -271,7 +282,6 @@ begin
    end loop;
    C.Start(1.0);
 end Simulation;
-
 
 
 
