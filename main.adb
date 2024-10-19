@@ -131,7 +131,7 @@ procedure Simulation is
       interval : Duration;
    begin
       accept Start(cleaningInterval: in Duration) do
-         dayNumber := 1;
+         dayNumber := 0;
          interval := cleaningInterval;
       end Start;
       Put_Line(ESC & "[92m" & "C: Cleaning task started." & ESC & "[0m");
@@ -143,7 +143,7 @@ procedure Simulation is
          if dayNumber = 10 then
             Put_Line(ESC & "[92m" & "C: Cleaning day arrived!" & ESC & "[0m");
             B.CleaningDay;
-            dayNumber := 1; 
+            dayNumber := 0; 
          end if;
       end loop;
    end Cleaning;
@@ -182,17 +182,22 @@ procedure Simulation is
          reservedSpaces : Integer := 0;
          
       begin
-         for W in producerType loop
-            if storage(W) < reservedSpacesPerProduct(W) then
-               reservedSpaces := reservedSpaces +reservedSpacesPerProduct(W) - storage(W);
-            end if;
-         end loop;
-         
-         
-         if inStorage + reservedSpaces >= storageCapacity then
+         if inStorage >= storageCapacity then
             return False;
-         else
+         elsif storage(product) < reservedSpacesPerProduct(product) then
             return True;
+         else
+            for W in producerType loop
+               if storage(W) < reservedSpacesPerProduct(W) then
+                  reservedSpaces := reservedSpaces +reservedSpacesPerProduct(W) - storage(W);
+               end if;
+            end loop;
+                 
+            if inStorage + reservedSpaces >= storageCapacity then
+               return False;
+            else
+               return True;
+            end if;
          end if;
       end CanAccept;
 
