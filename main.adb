@@ -1,3 +1,7 @@
+--Mikolaj Szady 197836
+--Maciej Daszkiewicz 198303
+--Szymon Kula 198068
+
 -- A skeleton of an ADA program for an assignment in programming languages
 
 with Ada.Text_IO; use Ada.Text_IO;
@@ -79,14 +83,25 @@ procedure Simulation is
          producerTypeNumber := product;   --stale przypisany do danego producenta (1-5)
          production := productionTime;   --ta zmienna nic nie robi
       end Start;
+
       Put_Line(ESC & "[93m" & "P: Started producer of " & productName(producerTypeNumber) & ESC & "[0m");
+
       loop
          randomTime := Duration(RandomProduction.Random(G));
          delay randomTime;
          Put_Line(ESC & "[93m" & "P: Produced product " & productName(producerTypeNumber) & " number "  & Integer'Image(productNumber) & ESC & "[0m");
          -- Accept for storage
-         B.Take(producerTypeNumber, productNumber);   --przekazanie do bufora (bufor bierze)
-         productNumber := productNumber + 1;
+         loop
+            select
+               B.Take(producerTypeNumber, productNumber);   --przekazanie do bufora (bufor bierze)
+               productNumber := productNumber + 1;
+               exit;
+            else
+               Put_Line("Producer is waiting");
+               delay Duration(3.0);
+            end select;
+         end loop;
+
       end loop;
    end Producer;
 
@@ -136,14 +151,14 @@ procedure Simulation is
       end Start;
       Put_Line(ESC & "[92m" & "C: Cleaning task started." & ESC & "[0m");
       loop
-         delay Duration(interval);  
+         delay Duration(interval);
          dayNumber := dayNumber + 1;
          Put_Line(ESC & "[92m" & "C: Day " & Integer'Image(dayNumber) & " passed." & ESC & "[0m");
 
          if dayNumber = 10 then
             Put_Line(ESC & "[92m" & "C: Cleaning day arrived!" & ESC & "[0m");
             B.CleaningDay;
-            dayNumber := 0; 
+            dayNumber := 0;
          end if;
       end loop;
    end Cleaning;
@@ -155,8 +170,8 @@ procedure Simulation is
       storageCapacity: constant Integer := 30;
       type StorageType is array (producerType) of Integer;
       storage: StorageType := (0, 0, 0, 0, 0);   --przechowuje liczbe produktow od kadzego produceta
-      reservedSpacesPerProduct: StorageType := (6, 4, 4, 4, 4); 
-      
+      reservedSpacesPerProduct: StorageType := (6, 4, 4, 4, 4);
+
       assemblyContent: array(assemblyType, producerType) of Integer
         := ((2, 1, 0, 3, 0), --do utworzenia a.1 potrzeba produktow 2 od P(1), 1 od P(2) itd, 2 od P(3) itd.
             (2, 0, 3, 0, 0), -- ...
@@ -180,7 +195,7 @@ procedure Simulation is
 
       function CanAccept(product: ProducerType) return Boolean is   --tu nie trzeba przekazywac parametrow lol
          reservedSpaces : Integer := 0;
-         
+
       begin
          if inStorage >= storageCapacity then
             return False;
@@ -192,7 +207,7 @@ procedure Simulation is
                   reservedSpaces := reservedSpaces +reservedSpacesPerProduct(W) - storage(W);
                end if;
             end loop;
-                 
+
             if inStorage + reservedSpaces >= storageCapacity then
                return False;
             else
@@ -211,7 +226,7 @@ procedure Simulation is
          end loop;
          return True;
       end CanDeliver;
-      
+
       procedure TodayIsCleaningDay is
       begin
          Put_Line(ESC & "[92m" & "C: Cleaning day: removing products." & ESC & "[0m");
@@ -248,8 +263,8 @@ procedure Simulation is
                   Put_Line(ESC & "[91m" & "B: Rejected product " & productName(product) & " number " & Integer'Image(number)& ESC & "[0m");
                end if;
             end Take;
-            
-         or   
+
+         or
             accept Deliver(assembly: in AssemblyType; number: out Integer) do
                if CanDeliver(assembly) then
                   Put_Line(ESC & "[91m" & "B: Delivered assembly " & assemblyName(assembly) & " number " & Integer'Image(assemblyNumber(assembly))& ESC & "[0m");
@@ -264,13 +279,13 @@ procedure Simulation is
                   number := 0;
                end if;
             end Deliver;
-         
+
          or
             accept CleaningDay do
                TodayIsCleaningDay;
             end CleaningDay;
          end select;
-         
+
             StorageContents;
       end loop;
    end Buffer;
@@ -287,6 +302,5 @@ begin
    end loop;
    C.Start(1.0);
 end Simulation;
-
 
 
